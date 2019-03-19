@@ -92,7 +92,8 @@ func JulianDate(t time.Time) float32 {
 // Calendar represents a yearly calendar with a list of holidays.
 type Calendar struct {
 	holidays [13][]Holiday // 0 for offset based holidays, 1-12 for month based
-	workday  [7]bool       // flags to indicate a day of the week is a workday
+	//workday  [7]bool       // flags to indicate a day of the week is a workday
+	workdays [7]Workday
 	Observed ObservedRule
 }
 
@@ -103,11 +104,11 @@ func NewCalendar() *Calendar {
 	for i := range c.holidays {
 		c.holidays[i] = make([]Holiday, 0, 2)
 	}
-	c.workday[time.Monday] = true
-	c.workday[time.Tuesday] = true
-	c.workday[time.Wednesday] = true
-	c.workday[time.Thursday] = true
-	c.workday[time.Friday] = true
+	c.workdays[time.Monday] = Workday{working: true}
+	c.workdays[time.Tuesday] = Workday{working: true}
+	c.workdays[time.Wednesday] = Workday{working: true}
+	c.workdays[time.Thursday] = Workday{working: true}
+	c.workdays[time.Friday] = Workday{working: true}
 	return c
 }
 
@@ -119,8 +120,8 @@ func (c *Calendar) AddHoliday(h ...Holiday) {
 }
 
 // SetWorkday changes the given day's status as a standard working day
-func (c *Calendar) SetWorkday(day time.Weekday, workday bool) {
-	c.workday[day] = workday
+func (c *Calendar) SetWorkday(day time.Weekday, workday Workday) {
+	c.workdays[day] = workday
 }
 
 // IsHoliday reports whether a given date is a holiday. It does not account
@@ -144,7 +145,7 @@ func (c *Calendar) IsHoliday(date time.Time) bool {
 func (c *Calendar) IsWorkday(date time.Time) bool {
 	day := date.Weekday()
 
-	if !c.workday[day] || c.IsHoliday(date) {
+	if !c.workdays[day].isWorking(date) || c.IsHoliday(date) {
 		return false
 	}
 
@@ -297,6 +298,28 @@ func (c *Calendar) CountWorkdays(start, end time.Time) int64 {
 	return int64(factor * result)
 }
 
+//CountWorkHours return amount of workdays between start and end dates
+func (c *Calendar) CountWorkHours(start, end time.Time) time.Duration {
+	factor := 1
+	if end.Before(start) {
+		factor = -1
+		start, end = end, start
+	}
+	var result time.Duration
+	var i time.Time
+	for i = start; i.Before(end); i = i.AddDate(0, 0, 1) {
+		if c.IsWorkday(i) {
+			dur := c.workdays[i.Weekday()].duration()
+			result += dur
+		}
+	}
+	if i.Equal(end) && c.IsWorkday(end) {
+		dur := c.workdays[i.Weekday()].duration()
+		result += dur
+	}
+	return time.Duration(factor) * result
+}
+
 // AddSkipNonWorkdays returns start time plus d woking duration
 func (c *Calendar) AddSkipNonWorkdays(start time.Time, d time.Duration) time.Time {
 	const day = 24 * time.Hour
@@ -306,9 +329,10 @@ func (c *Calendar) AddSkipNonWorkdays(start time.Time, d time.Duration) time.Tim
 			s = s.Add(day)
 		}
 
-		if d >= day {
+		dur := c.workdays[s.Weekday()].duration()
+		if d >= dur {
 			s = s.Add(day)
-			d = d - day
+			d = d - dur
 		} else if d > 0 {
 			s = s.Add(d)
 			d = 0

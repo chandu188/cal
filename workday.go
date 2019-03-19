@@ -95,14 +95,15 @@ func (b *businessHours) withInBusinessHours(date time.Time) bool {
 	return date.After(ctStart) && date.Before(ctEnd)
 }
 
-type workday struct {
+type Workday struct {
 	working bool
 	hrs     []businessHours
 }
 
-func NewWorkday(working bool, start, end string) (*workday, error) {
+//NewWorkday returns workday
+func NewWorkday(working bool, start, end string) (*Workday, error) {
 
-	w := &workday{}
+	w := &Workday{}
 	w.working = working
 	err := w.AddBusinessHours(start, end)
 	if err != nil {
@@ -112,7 +113,8 @@ func NewWorkday(working bool, start, end string) (*workday, error) {
 
 }
 
-func (w *workday) AddBusinessHours(start, end string) error {
+// AddBusinessHours adds business hours to a workday
+func (w *Workday) AddBusinessHours(start, end string) error {
 	if !w.working {
 		return errors.New("cannot add business hours on a non working day")
 	}
@@ -132,7 +134,7 @@ func (w *workday) AddBusinessHours(start, end string) error {
 	return nil
 }
 
-func (w *workday) addBusinessHours(start, end clockTime) error {
+func (w *Workday) addBusinessHours(start, end clockTime) error {
 
 	startTime := time.Date(0, 0, 0, start.hh, start.mm, start.sec, 0, time.UTC)
 	endTime := time.Date(0, 0, 0, end.hh, end.mm, end.sec, 0, time.UTC)
@@ -148,21 +150,34 @@ func (w *workday) addBusinessHours(start, end clockTime) error {
 	return nil
 }
 
-func (w *workday) isWorking(date time.Time) bool {
+func (w *Workday) isWorking(date time.Time) bool {
 	if !w.working {
 		return false
 	}
 
+	min := clockTime{hh: 24, mm: 59, sec: 59}
+	max := clockTime{}
 	for _, b := range w.hrs {
+		if b.start.Before(min) {
+			min = b.start
+		}
+		if b.end.After(max) {
+			max = b.end
+		}
 		if b.withInBusinessHours(date) {
 			return true
 		}
 	}
 
+	if len(w.hrs) > 0 {
+		b := businessHours{start: min, end: max}
+		return b.withInBusinessHours(date)
+	}
+
 	return w.working
 }
 
-func (w *workday) duration() time.Duration {
+func (w *Workday) duration() time.Duration {
 
 	if len(w.hrs) == 0 && w.working {
 		return 24 * time.Hour
@@ -174,14 +189,14 @@ func (w *workday) duration() time.Duration {
 	return dur
 }
 
-func (w *workday) SetWorkDay(working bool) {
+func (w *Workday) SetWorkDay(working bool) {
 	w.working = working
 	if !working {
 		w.hrs = nil
 	}
 }
 
-func (w *workday) getRemainingDuration(ct clockTime) time.Duration {
+func (w *Workday) getRemainingDuration(ct clockTime) time.Duration {
 	duration := time.Duration(0)
 	for _, bhr := range w.hrs {
 		duration += bhr.remainingDuration(ct)

@@ -202,6 +202,37 @@ func TestWithInBusinessHours(t *testing.T) {
 	}
 }
 
+func TestWithInBusinessHours2(t *testing.T) {
+	layout := "2006-01-02T15:04:05.000Z"
+	str := "2014-11-12T11:45:26.371Z"
+	now, _ := time.Parse(layout, str)
+	hh, mm, sec := now.Clock()
+	startClkTime := clockTime{hh: hh, mm: mm, sec: sec}
+	hh, mm, sec = now.Add(4 * time.Hour).Clock()
+	endClkTime := clockTime{hh: hh, mm: mm, sec: sec}
+	w := Workday{
+		working: true,
+	}
+	w.addBusinessHours(startClkTime, endClkTime)
+
+	hh, mm, sec = now.Add(6 * time.Hour).Clock()
+	startClkTime = clockTime{hh: hh, mm: mm, sec: sec}
+	hh, mm, sec = now.Add(9 * time.Hour).Clock()
+	endClkTime = clockTime{hh: hh, mm: mm, sec: sec}
+	w.addBusinessHours(startClkTime, endClkTime)
+
+	res := w.isWorking(now.Add(5 * time.Hour))
+	if !res {
+		t.Errorf("got: %t; want: %t", res, true)
+	}
+
+	res = w.isWorking(now.Add(10 * time.Hour))
+	if res {
+		t.Errorf("got: %t; want: %t", res, true)
+	}
+
+}
+
 func TestNewWorkday(t *testing.T) {
 	tcs := []struct {
 		isWorking bool
@@ -249,7 +280,7 @@ func TestNewWorkday(t *testing.T) {
 }
 
 func TestWorkdayDuration(t *testing.T) {
-	w := workday{}
+	w := Workday{}
 	w.working = true
 	w.AddBusinessHours("08:00:00", "12:00:00")
 	w.AddBusinessHours("13:00:00", "18:00:00")
@@ -261,7 +292,7 @@ func TestWorkdayDuration(t *testing.T) {
 }
 
 func TestWorkdayEmptyDuration(t *testing.T) {
-	w := workday{}
+	w := Workday{}
 	w.working = true
 	d := w.duration()
 	durationInHrs := d / time.Hour
@@ -271,7 +302,7 @@ func TestWorkdayEmptyDuration(t *testing.T) {
 }
 
 func TestSetWorkDay(t *testing.T) {
-	w := workday{working: true}
+	w := Workday{working: true}
 	w.AddBusinessHours("08:00:00", "12:00:00")
 	w.AddBusinessHours("13:00:00", "18:00:00")
 	if len(w.hrs) != 2 {
@@ -287,7 +318,7 @@ func TestSetWorkDay(t *testing.T) {
 }
 
 func TestGetRemainingDuration(t *testing.T) {
-	w := workday{working: true}
+	w := Workday{working: true}
 	w.AddBusinessHours("08:00:00", "12:00:00")
 	w.AddBusinessHours("13:00:00", "17:00:00")
 	tcs := []struct {
