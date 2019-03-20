@@ -227,7 +227,7 @@ func TestWithInBusinessHours2(t *testing.T) {
 	}
 
 	res = w.isWorking(now.Add(10 * time.Hour))
-	if res {
+	if !res {
 		t.Errorf("got: %t; want: %t", res, true)
 	}
 
@@ -343,7 +343,7 @@ func TestGetRemainingDuration(t *testing.T) {
 		if err != nil {
 			t.Errorf("got unexpeced error %s", err)
 		}
-		d := w.getRemainingDuration(ct)
+		d := w.remainingDuration(ct)
 		if d != tc.dur {
 			t.Errorf("got: %d; want: %d", d, tc.dur)
 		}

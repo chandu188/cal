@@ -89,6 +89,22 @@ func (b *businessHours) remainingDuration(ct clockTime) time.Duration {
 
 }
 
+func (b *businessHours) durationTo(ct clockTime) time.Duration {
+	var duration time.Duration
+
+	if ct.Before(b.start) {
+		return duration
+	}
+
+	if ct.After(b.end) {
+		ct = b.end
+	}
+	end := clockTimeToTime(ct)
+	start := clockTimeToTime(b.start)
+	return end.Sub(start)
+
+}
+
 func (b *businessHours) withInBusinessHours(date time.Time) bool {
 	ctStart := time.Date(date.Year(), date.Month(), date.Day(), b.start.hh, b.start.mm, b.start.sec, 0, date.Location())
 	ctEnd := time.Date(date.Year(), date.Month(), date.Day(), b.end.hh, b.end.mm, b.end.sec, 0, date.Location())
@@ -151,28 +167,28 @@ func (w *Workday) addBusinessHours(start, end clockTime) error {
 }
 
 func (w *Workday) isWorking(date time.Time) bool {
-	if !w.working {
-		return false
-	}
+	// if !w.working {
+	// 	return false
+	// }
 
-	min := clockTime{hh: 24, mm: 59, sec: 59}
-	max := clockTime{}
-	for _, b := range w.hrs {
-		if b.start.Before(min) {
-			min = b.start
-		}
-		if b.end.After(max) {
-			max = b.end
-		}
-		if b.withInBusinessHours(date) {
-			return true
-		}
-	}
+	// min := clockTime{hh: 24, mm: 59, sec: 59}
+	// max := clockTime{}
+	// for _, b := range w.hrs {
+	// 	if b.start.Before(min) {
+	// 		min = b.start
+	// 	}
+	// 	if b.end.After(max) {
+	// 		max = b.end
+	// 	}
+	// 	if b.withInBusinessHours(date) {
+	// 		return true
+	// 	}
+	// }
 
-	if len(w.hrs) > 0 {
-		b := businessHours{start: min, end: max}
-		return b.withInBusinessHours(date)
-	}
+	// if len(w.hrs) > 0 {
+	// 	b := businessHours{start: min, end: max}
+	// 	return b.withInBusinessHours(date)
+	// }
 
 	return w.working
 }
@@ -189,6 +205,14 @@ func (w *Workday) duration() time.Duration {
 	return dur
 }
 
+func (w *Workday) durationTo(ct clockTime) time.Duration {
+	duration := time.Duration(0)
+	for _, bhr := range w.hrs {
+		duration += bhr.durationTo(ct)
+	}
+	return duration
+}
+
 func (w *Workday) SetWorkDay(working bool) {
 	w.working = working
 	if !working {
@@ -196,7 +220,7 @@ func (w *Workday) SetWorkDay(working bool) {
 	}
 }
 
-func (w *Workday) getRemainingDuration(ct clockTime) time.Duration {
+func (w *Workday) remainingDuration(ct clockTime) time.Duration {
 	duration := time.Duration(0)
 	for _, bhr := range w.hrs {
 		duration += bhr.remainingDuration(ct)

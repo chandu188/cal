@@ -104,11 +104,13 @@ func NewCalendar() *Calendar {
 	for i := range c.holidays {
 		c.holidays[i] = make([]Holiday, 0, 2)
 	}
-	c.workdays[time.Monday] = Workday{working: true}
-	c.workdays[time.Tuesday] = Workday{working: true}
-	c.workdays[time.Wednesday] = Workday{working: true}
-	c.workdays[time.Thursday] = Workday{working: true}
-	c.workdays[time.Friday] = Workday{working: true}
+	w := Workday{working: true}
+	w.AddBusinessHours("00:00:00", "24:00:00")
+	c.workdays[time.Monday] = w
+	c.workdays[time.Tuesday] = w
+	c.workdays[time.Wednesday] = w
+	c.workdays[time.Thursday] = w
+	c.workdays[time.Friday] = w
 	return c
 }
 
@@ -306,15 +308,20 @@ func (c *Calendar) CountWorkHours(start, end time.Time) time.Duration {
 		start, end = end, start
 	}
 	var result time.Duration
-	var i time.Time
-	for i = start; i.Before(end); i = i.AddDate(0, 0, 1) {
+	// calculate remaining duration in the start date
+	if c.IsWorkday(start) {
+		result = c.workdays[start.Weekday()].remainingDuration(clockTime{hh: start.Hour(), mm: start.Minute(), sec: start.Second()})
+	}
+	i := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location()).AddDate(0, 0, 1)
+	for ; i.Before(end); i = i.AddDate(0, 0, 1) {
 		if c.IsWorkday(i) {
 			dur := c.workdays[i.Weekday()].duration()
 			result += dur
 		}
 	}
+	//calculate duration till the enddate time
 	if i.Equal(end) && c.IsWorkday(end) {
-		dur := c.workdays[i.Weekday()].duration()
+		dur := c.workdays[i.Weekday()].durationTo(clockTime{hh: i.Hour(), mm: i.Minute(), sec: i.Second()})
 		result += dur
 	}
 	return time.Duration(factor) * result

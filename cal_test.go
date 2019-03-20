@@ -469,6 +469,61 @@ func TestCountWorkdays(t *testing.T) {
 	}
 }
 
+func TestCountWorkHours(t *testing.T) {
+	/*
+	      Dezember 2015
+	   Mo Di Mi Do Fr Sa So
+	   14 15 16 17 18 19 20
+	   21 22 23 24 25 26 27
+	   28 29 30 31
+
+	       Januar 2016
+	   Mo Di Mi Do Fr Sa So
+	                1  2  3
+	    4  5  6  7  8  9 10
+	*/
+	c := NewCalendar()
+	c.Observed = ObservedExact
+	c.AddHoliday(USNewYear)
+	yearend := time.Date(2015, 12, 31, 12, 0, 0, 0, time.UTC)
+	newyear := time.Date(2016, 1, 1, 12, 0, 0, 0, time.UTC)
+	fifth := time.Date(2016, 1, 5, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		t    time.Time
+		u    time.Time
+		want time.Duration
+	}{
+		{
+			time.Date(2015, 12, 17, 12, 0, 0, 0, time.UTC),
+			time.Date(2015, 12, 20, 12, 0, 0, 0, time.UTC),
+			12 * time.Hour,
+		},
+		{newyear, newyear, 0 * time.Hour},
+		{yearend, newyear, 4 * time.Hour},
+		{yearend, fifth, 20 * time.Hour},
+	}
+	w := Workday{working: true}
+	w.AddBusinessHours("08:00:00", "12:00:00")
+	w.AddBusinessHours("13:00:00", "17:00:00")
+	c.SetWorkday(time.Monday, w)
+	c.SetWorkday(time.Tuesday, w)
+	c.SetWorkday(time.Wednesday, w)
+	c.SetWorkday(time.Thursday, w)
+	c.SetWorkday(time.Friday, w)
+
+	for _, test := range tests {
+		got := c.CountWorkHours(test.t, test.u)
+		if got != test.want {
+			t.Errorf("got: %v; want: %v (%s-%s)", got, test.want, test.t, test.u)
+		}
+		got = c.CountWorkHours(test.u, test.t)
+		if got != -test.want {
+			t.Errorf("got: %v; want: %v (%s-%s)", got, -test.want, test.u, test.t)
+		}
+	}
+
+}
 func TestAddSkipNonWorkdays(t *testing.T) {
 	c := NewCalendar()
 
