@@ -117,15 +117,11 @@ type Workday struct {
 }
 
 //NewWorkday returns workday
-func NewWorkday(working bool, start, end string) (*Workday, error) {
+func NewWorkday(working bool) *Workday {
 
 	w := &Workday{}
 	w.working = working
-	err := w.AddBusinessHours(start, end)
-	if err != nil {
-		return nil, err
-	}
-	return w, nil
+	return w
 
 }
 

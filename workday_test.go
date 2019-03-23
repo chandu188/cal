@@ -262,7 +262,8 @@ func TestNewWorkday(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		wd, err := NewWorkday(tc.isWorking, tc.startDate, tc.endDate)
+		wd := NewWorkday(tc.isWorking)
+		err := wd.AddBusinessHours(tc.startDate, tc.endDate)
 		if (err != nil) != tc.err {
 			t.Errorf("expected error to be %t, but recieved %t", tc.err, err != nil)
 		}
