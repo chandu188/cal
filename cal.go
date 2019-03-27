@@ -111,7 +111,7 @@ func NewCalendar() *Calendar {
 	for i := range c.holidays {
 		c.holidays[i] = make([]Holiday, 0, 2)
 	}
-	w := Workday{working: true}
+	w := Workday{Working: true}
 	w.AddBusinessHours("00:00:00", "24:00:00")
 	c.workdays[time.Monday] = w
 	c.workdays[time.Tuesday] = w

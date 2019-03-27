@@ -211,7 +211,7 @@ func TestWithInBusinessHours2(t *testing.T) {
 	hh, mm, sec = now.Add(4 * time.Hour).Clock()
 	endClkTime := clockTime{hh: hh, mm: mm, sec: sec}
 	w := Workday{
-		working: true,
+		Working: true,
 	}
 	w.addBusinessHours(startClkTime, endClkTime)
 
@@ -270,8 +270,8 @@ func TestNewWorkday(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		if wd.working != tc.isWorking {
-			t.Errorf("expected %t for working, but recieved %t", tc.isWorking, wd.working)
+		if wd.Working != tc.isWorking {
+			t.Errorf("expected %t for working, but recieved %t", tc.isWorking, wd.Working)
 		}
 
 		if len(wd.hrs) != 1 {
@@ -282,7 +282,7 @@ func TestNewWorkday(t *testing.T) {
 
 func TestWorkdayDuration(t *testing.T) {
 	w := Workday{}
-	w.working = true
+	w.Working = true
 	w.AddBusinessHours("08:00:00", "12:00:00")
 	w.AddBusinessHours("13:00:00", "18:00:00")
 	d := w.duration()
@@ -294,7 +294,7 @@ func TestWorkdayDuration(t *testing.T) {
 
 func TestWorkdayEmptyDuration(t *testing.T) {
 	w := Workday{}
-	w.working = true
+	w.Working = true
 	d := w.duration()
 	durationInHrs := d / time.Hour
 	if durationInHrs != 24 {
@@ -303,15 +303,15 @@ func TestWorkdayEmptyDuration(t *testing.T) {
 }
 
 func TestSetWorkDay(t *testing.T) {
-	w := Workday{working: true}
+	w := Workday{Working: true}
 	w.AddBusinessHours("08:00:00", "12:00:00")
 	w.AddBusinessHours("13:00:00", "18:00:00")
 	if len(w.hrs) != 2 {
 		t.Errorf("got:%d; want: 2", len(w.hrs))
 	}
 	w.SetWorkDay(false)
-	if w.working != false {
-		t.Errorf("got %t; want: false", w.working)
+	if w.Working != false {
+		t.Errorf("got %t; want: false", w.Working)
 	}
 	if len(w.hrs) != 0 {
 		t.Errorf("got %d; want: 0, when is working is set to false", len(w.hrs))
@@ -319,7 +319,7 @@ func TestSetWorkDay(t *testing.T) {
 }
 
 func TestGetRemainingDuration(t *testing.T) {
-	w := Workday{working: true}
+	w := Workday{Working: true}
 	w.AddBusinessHours("08:00:00", "12:00:00")
 	w.AddBusinessHours("13:00:00", "17:00:00")
 	tcs := []struct {

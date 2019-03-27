@@ -137,8 +137,8 @@ func TestJulianDate(t *testing.T) {
 
 func TestWorkday(t *testing.T) {
 	c := NewCalendar()
-	c.SetWorkday(time.Monday, Workday{working: false})
-	c.SetWorkday(time.Saturday, Workday{working: true})
+	c.SetWorkday(time.Monday, Workday{Working: false})
+	c.SetWorkday(time.Saturday, Workday{Working: true})
 	c.AddHoliday(Holiday{Month: time.June, Day: 12})
 	tests := []struct {
 		t    time.Time
@@ -347,18 +347,18 @@ func TestWorkdaysRemain(t *testing.T) {
 
 func TestWorkdaysRemainCustom(t *testing.T) {
 	c := NewCalendar()
-	c.SetWorkday(time.Monday, Workday{working: false})
-	c.SetWorkday(time.Tuesday, Workday{working: false})
-	c.SetWorkday(time.Wednesday, Workday{working: false})
-	c.SetWorkday(time.Thursday, Workday{working: false})
-	c.SetWorkday(time.Friday, Workday{working: false})
-	c.SetWorkday(time.Saturday, Workday{working: true})
+	c.SetWorkday(time.Monday, Workday{Working: false})
+	c.SetWorkday(time.Tuesday, Workday{Working: false})
+	c.SetWorkday(time.Wednesday, Workday{Working: false})
+	c.SetWorkday(time.Thursday, Workday{Working: false})
+	c.SetWorkday(time.Friday, Workday{Working: false})
+	c.SetWorkday(time.Saturday, Workday{Working: true})
 	days := c.WorkdaysRemain(time.Date(2017, 6, 1, 12, 0, 0, 0, time.UTC))
 	if days != 4 {
 		t.Errorf("got: %d; want %d", days, 4)
 	}
 
-	c.SetWorkday(time.Friday, Workday{working: true})
+	c.SetWorkday(time.Friday, Workday{Working: true})
 	days = c.WorkdaysRemain(time.Date(2017, 6, 1, 12, 0, 0, 0, time.UTC))
 	if days != 9 {
 		t.Errorf("got: %d; want %d", days, 9)
@@ -503,7 +503,7 @@ func TestCountWorkHours(t *testing.T) {
 		{yearend, newyear, 4 * time.Hour},
 		{yearend, fifth, 20 * time.Hour},
 	}
-	w := Workday{working: true}
+	w := Workday{Working: true}
 	w.AddBusinessHours("08:00:00", "12:00:00")
 	w.AddBusinessHours("13:00:00", "17:00:00")
 	c.SetWorkday(time.Monday, w)
