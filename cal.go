@@ -91,10 +91,11 @@ func JulianDate(t time.Time) float32 {
 
 // Calendar represents a yearly calendar with a list of holidays.
 type Calendar struct {
-	holidays    [13][]Holiday // 0 for offset based holidays, 1-12 for month based
-	WorkdayFunc WorkdayFn     // optional function to override workday flags
-	workdays    [7]Workday
-	Observed    ObservedRule
+	holidays       [13][]Holiday // 0 for offset based holidays, 1-12 for month based
+	WorkdayFunc    WorkdayFn     // optional function to override workday flags
+	GetWorkDurFunc GetDurationFn //optional function to override workday duration
+	workdays       [7]Workday
+	Observed       ObservedRule
 }
 
 // WorkdayFn reports whether the given date is a workday.
@@ -103,6 +104,9 @@ type Calendar struct {
 // If your workdays are fixed (Mon-Fri for example) then a WorkdayFn
 // is not necessary and you can use cal.SetWorkday() instead.
 type WorkdayFn func(date time.Time) bool
+
+//GetDurationFn reports the number of working hours for the given day
+type GetDurationFn func(date time.Time) time.Duration
 
 // NewCalendar creates a new Calendar with no holidays defined
 // and work days of Monday through Friday.
@@ -184,6 +188,18 @@ func (c *Calendar) IsWorkday(date time.Time) bool {
 	}
 
 	return true
+}
+
+func (c *Calendar) getDuration(date time.Time) time.Duration {
+	var dur time.Duration
+	if c.GetWorkDurFunc != nil {
+		dur = c.GetWorkDurFunc(date)
+	}
+	if dur == 0 {
+		dur = c.workdays[date.Weekday()].duration()
+	}
+
+	return dur
 }
 
 // countWorkdays reports the number of workdays from the given date to the end
@@ -329,7 +345,7 @@ func (c *Calendar) CountWorkHours(start, end time.Time) time.Duration {
 	i := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location()).AddDate(0, 0, 1)
 	for ; i.Before(end); i = i.AddDate(0, 0, 1) {
 		if c.IsWorkday(i) {
-			dur := c.workdays[i.Weekday()].duration()
+			dur := c.getDuration(i)
 			result += dur
 		}
 	}
@@ -350,7 +366,7 @@ func (c *Calendar) AddSkipNonWorkdays(start time.Time, d time.Duration) time.Tim
 			s = s.Add(day)
 		}
 
-		dur := c.workdays[s.Weekday()].duration()
+		dur := c.getDuration(s)
 		if d >= dur {
 			s = s.Add(day)
 			d = d - dur
